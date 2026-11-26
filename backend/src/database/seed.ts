@@ -547,6 +547,86 @@ export async function runSeeders(): Promise<void> {
         }
     }
 
+    // 4b. Seed generic application nests (templates only; runtime support depends on the node engine).
+    const genericNests = [
+        {
+            name: 'Node.js',
+            description: 'Node.js application templates. Requires a compatible Node.js container runtime.',
+            eggs: [{
+                name: 'Node.js Generic',
+                softwareType: 'nodejs',
+                description: 'Run a Node.js application from a Git repository or uploaded files.',
+                startup: 'if [ -f package.json ]; then npm install; fi; node {{MAIN_FILE}}',
+                dockerImages: {
+                    'Node.js 22': 'ghcr.io/ptero-eggs/yolks:nodejs_22',
+                    'Node.js 20': 'ghcr.io/ptero-eggs/yolks:nodejs_20',
+                },
+                variables: [
+                    { name: 'Main file', description: 'Application entry file.', env_variable: 'MAIN_FILE', default_value: 'index.js', user_viewable: true, user_editable: true, rules: 'required|string|max:128' },
+                    { name: 'Install packages', description: 'Extra npm packages to install.', env_variable: 'NODE_PACKAGES', default_value: '', user_viewable: true, user_editable: true, rules: 'nullable|string' },
+                ],
+            }],
+        },
+        {
+            name: 'Python',
+            description: 'Python application templates. Requires a compatible Python container runtime.',
+            eggs: [{
+                name: 'Python Generic',
+                softwareType: 'python',
+                description: 'Run a Python application with optional requirements.txt dependencies.',
+                startup: 'if [ -f requirements.txt ]; then pip install -r requirements.txt; fi; python {{PY_FILE}}',
+                dockerImages: {
+                    'Python 3.12': 'ghcr.io/ptero-eggs/yolks:python_3.12',
+                    'Python 3.11': 'ghcr.io/ptero-eggs/yolks:python_3.11',
+                },
+                variables: [
+                    { name: 'App file', description: 'Python entry file.', env_variable: 'PY_FILE', default_value: 'app.py', user_viewable: true, user_editable: true, rules: 'required|string|max:128' },
+                ],
+            }],
+        },
+    ];
+
+    for (const genericNest of genericNests) {
+        let genericNestRow = await db.queryOne<{ id: number }>('SELECT id FROM nests WHERE name = ?', [genericNest.name]);
+        if (!genericNestRow) {
+            const nestResult = await db.execute(
+                'INSERT INTO nests (uuid, author, name, description) VALUES (?, ?, ?, ?)',
+                [crypto.randomUUID(), 'sourajitvfx@gmail.com', genericNest.name, genericNest.description]
+            );
+            genericNestRow = { id: nestResult.insertId };
+        }
+        for (const def of genericNest.eggs) {
+            const existing = await db.queryOne<{ id: number }>(
+                'SELECT id FROM eggs WHERE nest_id = ? AND software_type = ?',
+                [genericNestRow.id, def.softwareType]
+            );
+            if (existing) continue;
+            const eggResult = await db.execute(
+                `INSERT INTO eggs (
+                    uuid, nest_id, author, name, description, features, docker_images,
+                    file_denylist, startup, config_files, config_startup, config_logs, config_stop, software_type
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [
+                    crypto.randomUUID(), genericNestRow.id, 'sourajitvfx@gmail.com',
+                    def.name, def.description, JSON.stringify([]), JSON.stringify(def.dockerImages),
+                    JSON.stringify([]), def.startup, JSON.stringify({}), JSON.stringify({}),
+                    JSON.stringify({}), 'stop', def.softwareType,
+                ]
+            );
+            for (const v of def.variables) {
+                await db.execute(
+                    `INSERT INTO egg_variables (
+                        egg_id, name, description, env_variable, default_value, user_viewable, user_editable, rules
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [
+                        eggResult.insertId, v.name, v.description, v.env_variable, v.default_value,
+                        v.user_viewable ? 1 : 0, v.user_editable ? 1 : 0, v.rules,
+                    ]
+                );
+            }
+        }
+    }
+
     // 5. Seed default settings
     const defaultSettings: Record<string, string> = {
         'settings:app:name': config.appName,
