@@ -1,3 +1,5 @@
+import crypto from 'node:crypto';
+import bcrypt from 'bcryptjs';
 import http from 'node:http';
 import cookieParser from 'cookie-parser';
 import express from 'express';
@@ -18,10 +20,51 @@ import { startScheduler, stopScheduler } from './backend/src/scheduler/scheduler
 import { logger } from './backend/src/utils/logger';
 import { attachWebSocketServer } from './backend/src/websocket/wsServer';
 
+async function bootstrapAdminFromEnvironment(): Promise<void> {
+    const email = (process.env.ADMIN_EMAIL || '').trim().toLowerCase();
+    const username = (process.env.ADMIN_USERNAME || '').trim().toLowerCase();
+    const password = process.env.ADMIN_PASSWORD || '';
+
+    if (!email && !username && !password) return;
+    if (!email || !username || !password) {
+        throw new Error('Set ADMIN_EMAIL, ADMIN_USERNAME and ADMIN_PASSWORD together to bootstrap the initial admin.');
+    }
+    if (!/^\S+@\S+\.\S+$/.test(email)) throw new Error('ADMIN_EMAIL is not a valid email address.');
+    if (!/^[a-z0-9_.-]{3,32}$/.test(username)) throw new Error('ADMIN_USERNAME must be 3-32 lowercase letters, numbers, dots, underscores or hyphens.');
+    if (password.length < 12) throw new Error('ADMIN_PASSWORD must be at least 12 characters long.');
+
+    const matches = await db.query<{ id: number; email: string; username: string }>(
+        'SELECT id, email, username FROM users WHERE LOWER(email) = ? OR LOWER(username) = ?',
+        [email, username]
+    );
+    const sameAccount = matches.find(
+        (user) => user.email.toLowerCase() === email && user.username.toLowerCase() === username
+    );
+
+    if (matches.length > 0 && !sameAccount) {
+        throw new Error('Admin bootstrap stopped: ADMIN_EMAIL or ADMIN_USERNAME is already used by a different account.');
+    }
+
+    if (sameAccount) {
+        await db.execute('UPDATE users SET root_admin = 1 WHERE id = ?', [sameAccount.id]);
+        logger.info('Environment admin already exists; root admin access confirmed.', { username });
+        return;
+    }
+
+    const hash = await bcrypt.hash(password, 12);
+    await db.execute(
+        `INSERT INTO users (uuid, username, email, name_first, name_last, password, language, root_admin, gravatar)
+         VALUES (?, ?, ?, 'System', 'Administrator', ?, 'en', 1, 1)`,
+        [crypto.randomUUID(), username, email, hash]
+    );
+    logger.info('Initial root admin created from Railway environment variables.', { username });
+}
+
 async function bootstrap() {
     await db.init();
     await runMigrations();
     await runSeeders();
+    await bootstrapAdminFromEnvironment();
 
     const app = express();
     app.set('trust proxy', 1);
