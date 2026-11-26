@@ -46,20 +46,37 @@ async function main() {
                 break;
             }
             case 'create-admin': {
-                const email = args[0]?.trim();
-                const username = args[1]?.trim().toLowerCase();
-                const password = args[2];
+                const email = (args[0] || process.env.ADMIN_EMAIL || '').trim().toLowerCase();
+                const username = (args[1] || process.env.ADMIN_USERNAME || '').trim().toLowerCase();
+                const password = args[2] || process.env.ADMIN_PASSWORD || '';
                 if (!email || !username || !password) {
-                    throw new Error('Usage: cli.ts create-admin <email> <username> <password>');
+                    throw new Error(
+                        'Usage: npm run admin:create -- <email> <username> <password> OR set ADMIN_EMAIL, ADMIN_USERNAME and ADMIN_PASSWORD.'
+                    );
+                }
+                if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) {
+                    throw new Error('Please provide a valid admin email address.');
+                }
+                if (username.length < 3 || username.length > 32 || !/^[a-z0-9_.-]+$/.test(username)) {
+                    throw new Error('Username must be 3-32 characters and use only lowercase letters, numbers, dots, underscores or hyphens.');
+                }
+                if (password.length < 12) {
+                    throw new Error('Admin password must be at least 12 characters long.');
                 }
                 await runMigrations();
-                const hash = await bcrypt.hash(password, 10);
-                const existing = await db.queryOne<{ id: number }>(
-                    'SELECT id FROM users WHERE email = ? OR username = ?',
+                const hash = await bcrypt.hash(password, 12);
+                const matches = await db.query<{ id: number; email: string; username: string }>(
+                    'SELECT id, email, username FROM users WHERE LOWER(email) = ? OR LOWER(username) = ?',
                     [email, username]
                 );
-                if (existing) {
-                    await db.execute('UPDATE users SET password = ?, root_admin = 1 WHERE id = ?', [hash, existing.id]);
+                const sameAccount = matches.find(
+                    (u) => u.email.toLowerCase() === email && u.username.toLowerCase() === username
+                );
+                if (matches.length > 0 && !sameAccount) {
+                    throw new Error('Email or username already belongs to a different account. No user was changed.');
+                }
+                if (sameAccount) {
+                    await db.execute('UPDATE users SET password = ?, root_admin = 1 WHERE id = ?', [hash, sameAccount.id]);
                     console.log(`Updated admin user ${username} (${email})`);
                 } else {
                     await db.execute(
