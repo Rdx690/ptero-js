@@ -2,16 +2,18 @@
   "name": "pterodactyl-panel-nodejs",
   "private": true,
   "version": "1.15.2",
-  "description": "Pterodactyl Panel v1.15.2 Node.js + Java Edition by Jishnu (JTG Studio)",
+  "description": "SOURAJITVFX Pterodactyl-inspired Panel v1.15.2 — Node.js + Java Edition",
   "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "start": "node server.ts",
+    "start": "tsx server.ts",
     "build": "tsc --noEmit",
     "test": "tsx --test backend/src/utils/*.test.ts backend/src/files/*.test.ts backend/src/minecraft/*.test.ts backend/src/backups/*.test.ts backend/src/processes/*.test.ts",
     "clean": "rm -rf dist server.js",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "cli": "tsx scripts/cli.ts",
+    "admin:create": "tsx scripts/cli.ts create-admin"
   },
   "dependencies": {
     "@types/adm-zip": "^0.5.8",
@@ -41,5 +43,8 @@
     "@types/node": "^22.14.0",
     "esbuild": "^0.25.0",
     "typescript": "^7.0.2"
+  },
+  "engines": {
+    "node": ">=22.5.0"
   }
 }
