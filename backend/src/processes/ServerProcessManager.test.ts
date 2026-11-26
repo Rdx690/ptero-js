@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { computeDirectorySizeAsync, formatJtgConsoleLine, JTG_TERMINAL_PRELUDE } from './ServerProcessManager';
+import { computeDirectorySizeAsync, formatJtgConsoleLine, SOURAJITVFX_TERMINAL_PRELUDE } from './ServerProcessManager';
 
 test('computeDirectorySizeAsync sums nested files cleanly and handles missing directories', async () => {
     assert.equal(await computeDirectorySizeAsync(path.join(os.tmpdir(), 'definitely-missing-dir-xyz')), 0);
@@ -20,9 +20,9 @@ test('computeDirectorySizeAsync sums nested files cleanly and handles missing di
     }
 });
 
-test('formatJtgConsoleLine outputs bold yellow container@JTG STUDIO~ prefix matching terminal prelude', () => {
+test('formatJtgConsoleLine outputs the SOURAJITVFX terminal prefix', () => {
     const line = formatJtgConsoleLine('Server marked as running!');
     assert.ok(line.startsWith(JTG_TERMINAL_PRELUDE));
-    assert.ok(line.includes('container@JTG STUDIO~ '));
+    assert.ok(line.includes('container@SOURAJITVFX~ '));
     assert.ok(line.endsWith('Server marked as running!\u001b[0m'));
 });
