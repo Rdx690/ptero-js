@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const ROOT_DIR = process.cwd();
+const isRailway = Boolean(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID);
 
 function ensureDir(dir: string): string {
     fs.mkdirSync(dir, { recursive: true });
@@ -16,7 +17,7 @@ const storageDir = ensureDir(path.resolve(ROOT_DIR, process.env.STORAGE_DIR || '
 const serversDir = ensureDir(path.resolve(ROOT_DIR, process.env.SERVERS_DIR || 'storage/servers'));
 const backupsDir = ensureDir(path.resolve(ROOT_DIR, process.env.BACKUPS_DIR || 'storage/backups'));
 const logsDir = ensureDir(path.resolve(ROOT_DIR, process.env.LOGS_DIR || 'storage/logs'));
-const javaRuntimeDir = ensureDir(path.resolve(ROOT_DIR, process.env.JAVA_RUNTIME_DIR || 'runtime/java'));
+const javaRuntimeDir = ensureDir(path.resolve(ROOT_DIR, process.env.JAVA_RUNTIME_DIR || path.join(storageDir, 'runtime/java')));
 
 interface PersistedSecrets {
     appKey: string;
@@ -71,7 +72,7 @@ export const config = {
     singleNodeMode: true as const,
 
     db: {
-        connection: (process.env.DB_CONNECTION || 'mysql').toLowerCase() as 'mysql' | 'sqlite',
+        connection: (process.env.DB_CONNECTION || (isRailway ? 'sqlite' : 'mysql')).toLowerCase() as 'mysql' | 'sqlite',
         host: process.env.DB_HOST || '127.0.0.1',
         port: Number(process.env.DB_PORT || 3306),
         database: process.env.DB_DATABASE || 'pterodactyl',
@@ -79,7 +80,7 @@ export const config = {
         password: process.env.DB_PASSWORD || '',
         poolLimit: Number(process.env.DB_POOL_LIMIT || 10),
         allowSqliteDevFallback: process.env.ALLOW_SQLITE_DEV_FALLBACK !== 'false',
-        sqlitePath: path.resolve(ROOT_DIR, process.env.SQLITE_PATH || 'storage/database.sqlite'),
+        sqlitePath: path.resolve(ROOT_DIR, process.env.SQLITE_PATH || path.join(storageDir, 'database.sqlite')),
     },
 
     paths: {
