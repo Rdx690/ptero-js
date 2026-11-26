@@ -46,10 +46,10 @@ const DISK_CACHE_TTL_MS = 20_000;
 const LOG_FLUSH_INTERVAL_MS = 100;
 const LOG_FLUSH_BATCH_SIZE = 64;
 
-export const JTG_TERMINAL_PRELUDE = '\u001b[1m\u001b[33mcontainer@JTG STUDIO~ \u001b[0m';
+export const SOURAJITVFX_TERMINAL_PRELUDE = '\u001b[1m\u001b[33mcontainer@SOURAJITVFX~ \u001b[0m';
 
 export function formatJtgConsoleLine(message: string): string {
-    return `${JTG_TERMINAL_PRELUDE}${message}\u001b[0m`;
+    return `${SOURAJITVFX_TERMINAL_PRELUDE}${message}\u001b[0m`;
 }
 
 export async function computeDirectorySizeAsync(dirPath: string): Promise<number> {
