@@ -75,6 +75,12 @@ npm run dev
 
 ---
 
+## Railway Deployment
+
+See [RAILWAY.md](RAILWAY.md) for direct Railway deployment, persistent-volume configuration, health checks, and the secure first-admin terminal command. This is a Node.js project, so admin creation uses `npm run admin:create` rather than PHP Artisan.
+
+---
+
 ## CLI Commands
 
 ```bash
