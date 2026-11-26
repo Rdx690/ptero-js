@@ -3,7 +3,7 @@
 A fast, lightweight, single-process **Node.js + TypeScript** edition of **Pterodactyl Panel v1.15.2**. Designed for **Docker VPS hosts, non-systemd Linux containers, and low-spec servers** — with zero PHP, Nginx, Redis, or Wings setup required.
 
 > **Based on:** [Pterodactyl Panel v1.15.2](https://pterodactyl.io) ([github.com/pterodactyl/panel](https://github.com/pterodactyl/panel))  
-> **Created by:** **Jishnu (JTG STUDIO 2026)** · [YouTube](https://www.youtube.com/@JishnuTech69) · [Discord](https://discord.gg/VMFTDc3jDQ)
+> **Created by:** **Sourajitvfx (SOURAJITVFX 2026)**
 
 ---
 
@@ -11,7 +11,7 @@ A fast, lightweight, single-process **Node.js + TypeScript** edition of **Pterod
 
 - **Single-Process & Lightweight** — Runs directly with Node.js + Express + WebSocket (`npm start` / PM2). No `systemd`, PHP, Redis, or nested Docker required.
 - **Classic Pterodactyl UI** — Preserves the familiar v1.15.2 Client React Panel (Console, Files, Backups, Schedules, Startup, Users, Account) and AdminLTE Admin Panel.
-- **Auto Java & Tuned Minecraft Performance** — Automatically manages Java **8, 11, 17, 21, 25, and 26**, applies **G1GC + fast-join network flags**, sets balanced `server.properties` defaults, and logs both `container@pterodactyl~` and `container@JTG STUDIO~` console banners.
+- **Auto Java & Tuned Minecraft Performance** — Automatically manages Java **8, 11, 17, 21, 25, and 26**, applies **G1GC + fast-join network flags**, sets balanced `server.properties` defaults, and logs both `container@pterodactyl~` and `container@SOURAJITVFX~` console banners.
 - **Unlimited Large File Uploads (`.part` Resumable)** — Uploads large files part-by-part without `413` size limits. Dropped connections keep `.part` files in File Manager so you can resume anytime from the `...` menu (manual cancel cleans up automatically).
 - **Unlimited (`0`) Resource Mode** — Set RAM, CPU, Disk, Backups, Databases, or Allocations to `0` for `Unlimited` (auto-omits `-Xmx` on launch).
 - **SQLite or MySQL/MariaDB** — Works out-of-the-box with zero-config SQLite or scales with MySQL 8+ / MariaDB 10.6+.
@@ -23,7 +23,7 @@ A fast, lightweight, single-process **Node.js + TypeScript** edition of **Pterod
 Run the interactive installer on Linux / Docker VPS:
 
 ```bash
-git clone https://github.com/JishnuTheGamer/ptero-js
+git clone https://github.com/Rdx690/ptero-js
 cd ptero-js
 bash install.sh
 ```
@@ -108,5 +108,5 @@ More docs: [Migration Guide](docs/MIGRATION.md) · [Testing Guide](docs/TESTING.
 
 - Licensed under the **[MIT License](LICENSE)**.
 - Built on **[Pterodactyl Panel v1.15.2](https://pterodactyl.io)** (Copyright © 2015–2021 Dane Everitt and contributors).
-- **Node.js + Java Edition** by **Jishnu (JTG STUDIO 2026)** — [YouTube](https://www.youtube.com/@JishnuTech69) · [Discord](https://discord.gg/VMFTDc3jDQ)
+- **Node.js + Java Edition** branding: **SOURAJITVFX** (2026).
 
