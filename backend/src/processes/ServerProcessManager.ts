@@ -6,7 +6,7 @@ import { db } from '../database/connection';
 import { ensureJavaRuntime } from '../minecraft/java';
 import { installMinecraftServer, SupportedSoftware, writeEulaFile, writeServerProperties } from '../minecraft/software';
 import { logger } from '../utils/logger';
-import { buildSafeServerJavaArgs } from '../utils/startup';
+import { buildSafeServerJavaArgs, renderStartupCommand } from '../utils/startup';
 
 export type ServerPowerState = 'offline' | 'starting' | 'running' | 'stopping';
 
@@ -346,6 +346,13 @@ class ServerProcessManager {
         this.emit(server.uuid, 'install started', '');
 
         try {
+            // Python/Node.js app eggs do not use the Minecraft JAR installer.
+            if (['python', 'nodejs', 'node.js'].includes(String(server.software_type || '').toLowerCase())) {
+                await db.execute('UPDATE servers SET status = NULL, installed_at = CURRENT_TIMESTAMP WHERE id = ?', [server.id]);
+                this.appendLog(server.uuid, managed, 'Application files are ready. Runtime dependencies must be available on the host.', 'daemon message');
+                this.emit(server.uuid, 'install completed', '');
+                return;
+            }
             const software = (server.software_type || 'paper') as SupportedSoftware;
             const mcVersion = envMap.MINECRAFT_VERSION || 'latest';
             const jarFile = envMap.SERVER_JARFILE || 'server.jar';
@@ -444,90 +451,98 @@ class ServerProcessManager {
         }
 
         const serverDir = this.getServerDir(server.uuid);
-        let mcVersion = envMap.MINECRAFT_VERSION || 'latest';
-        if (mcVersion === 'latest' && fs.existsSync(path.join(serverDir, '.mc-version'))) {
-            const detected = fs.readFileSync(path.join(serverDir, '.mc-version'), 'utf8').trim();
-            if (detected) mcVersion = detected;
-        }
-        const jarFile = envMap.SERVER_JARFILE || 'server.jar';
+        const softwareType = String(server.software_type || 'paper').toLowerCase();
+        const isPythonApp = softwareType === 'python';
+        const isNodeApp = softwareType === 'nodejs' || softwareType === 'node.js';
 
-        const javaCheck = await ensureJavaRuntime(
-            {
-                requestedImage: server.image,
-                mcVersion,
-                overridePath: server.java_path || undefined,
-                defaultPath: defaultJavaSetting?.value || config.defaultJavaPath || undefined,
-            },
-            (msg) => this.appendLog(server.uuid, managed, msg, 'daemon message')
-        );
+        let launchCommand: string;
+        let launchArgs: string[];
+        let launchLabel: string;
 
-        if (!javaCheck.runtime || !javaCheck.compatible) {
-            const errMsg = javaCheck.reason || `Compatible Java (${javaCheck.requiredMajor}+) is required.`;
-            this.appendLog(server.uuid, managed, errMsg, 'daemon error');
-            throw new Error(errMsg);
-        }
-
-        // Ensure server.properties & eula.txt match allocation & EULA
-        writeServerProperties(serverDir, server.primary_port || 25565, server.name);
-        if (!fs.existsSync(path.join(serverDir, 'eula.txt'))) {
-            writeEulaFile(serverDir, true);
-        }
-
-        // Auto-install server software if JAR does not exist yet
-        const jarPath = path.join(serverDir, jarFile);
-        if (!jarFile.startsWith('@') && !fs.existsSync(jarPath)) {
-            this.appendLog(
-                server.uuid,
-                managed,
-                `Server JAR "${jarFile}" missing — running automatic ${server.software_type} installer...`,
-                'daemon message'
-            );
-            await this.installServer(serverId);
-        }
-
-        // Build safe Java arguments without shell execution; cap heap safely and disable JLine/ANSI for piped stdin
-        const jvmArgs = buildSafeServerJavaArgs(
-            server.startup,
-            {
+        if (isPythonApp || isNodeApp) {
+            // Execute app eggs on the host runtime. Railway does not provide Docker egg containers.
+            const command = renderStartupCommand(server.startup || '', {
                 ...envMap,
                 SERVER_MEMORY: server.memory,
                 SERVER_IP: server.primary_ip || '0.0.0.0',
                 SERVER_PORT: server.primary_port || 25565,
-            },
-            Number(server.memory || 0),
-            { disableJline: true }
-        );
+            }).trim();
+            if (!command) throw new Error('Application startup command is empty.');
+            launchCommand = '/bin/bash';
+            launchArgs = ['-lc', command];
+            launchLabel = isPythonApp ? 'Python application' : 'Node.js application';
+            const executable = isPythonApp ? 'python3' : 'node';
+            const check = spawn(executable, ['--version'], { cwd: serverDir, stdio: 'ignore' });
+            const available = await new Promise<boolean>((resolve) => {
+                check.once('error', () => resolve(false));
+                check.once('close', (code) => resolve(code === 0));
+            });
+            if (!available) {
+                const message = `${executable} runtime is not installed on the panel host. Docker egg images are not available in this Railway deployment.`;
+                this.appendLog(server.uuid, managed, message, 'daemon error');
+                throw new Error(message);
+            }
+        } else {
+            let mcVersion = envMap.MINECRAFT_VERSION || 'latest';
+            if (mcVersion === 'latest' && fs.existsSync(path.join(serverDir, '.mc-version'))) {
+                const detected = fs.readFileSync(path.join(serverDir, '.mc-version'), 'utf8').trim();
+                if (detected) mcVersion = detected;
+            }
+            const jarFile = envMap.SERVER_JARFILE || 'server.jar';
+            const javaCheck = await ensureJavaRuntime(
+                {
+                    requestedImage: server.image,
+                    mcVersion,
+                    overridePath: server.java_path || undefined,
+                    defaultPath: defaultJavaSetting?.value || config.defaultJavaPath || undefined,
+                },
+                (msg) => this.appendLog(server.uuid, managed, msg, 'daemon message')
+            );
+            if (!javaCheck.runtime || !javaCheck.compatible) {
+                const errMsg = javaCheck.reason || `Compatible Java (${javaCheck.requiredMajor}+) is required.`;
+                this.appendLog(server.uuid, managed, errMsg, 'daemon error');
+                throw new Error(errMsg);
+            }
+
+            writeServerProperties(serverDir, server.primary_port || 25565, server.name);
+            if (!fs.existsSync(path.join(serverDir, 'eula.txt'))) writeEulaFile(serverDir, true);
+
+            const jarPath = path.join(serverDir, jarFile);
+            if (!jarFile.startsWith('@') && !fs.existsSync(jarPath)) {
+                this.appendLog(server.uuid, managed, `Server JAR "${jarFile}" missing — running automatic ${server.software_type} installer...`, 'daemon message');
+                await this.installServer(serverId);
+            }
+            launchCommand = javaCheck.runtime.path;
+            launchArgs = buildSafeServerJavaArgs(
+                server.startup,
+                { ...envMap, SERVER_MEMORY: server.memory, SERVER_IP: server.primary_ip || '0.0.0.0', SERVER_PORT: server.primary_port || 25565 },
+                Number(server.memory || 0),
+                { disableJline: true }
+            );
+            launchLabel = `Minecraft server using Java ${javaCheck.runtime.rawVersion}`;
+        }
 
         managed.state = 'starting';
         managed.stopRequested = false;
         managed.startedAt = Date.now();
         this.emit(server.uuid, 'status', 'starting');
-        this.appendLog(
-            server.uuid,
-            managed,
-            `Starting Minecraft server using ${javaCheck.runtime.path} (Java ${javaCheck.runtime.rawVersion})`,
-            'daemon message'
-        );
-        this.appendLog(
-            server.uuid,
-            managed,
-            formatJtgConsoleLine(`Starting server runtime (Java ${javaCheck.runtime.rawVersion})...`),
-            'console output'
-        );
+        this.appendLog(server.uuid, managed, `Starting ${launchLabel}...`, 'daemon message');
+        this.appendLog(server.uuid, managed, formatJtgConsoleLine(`Starting ${launchLabel}...`), 'console output');
 
-        const child = spawn(javaCheck.runtime.path, jvmArgs, {
+        const child = spawn(launchCommand, launchArgs, {
             cwd: serverDir,
             stdio: ['pipe', 'pipe', 'pipe'],
             env: {
+                ...process.env,
+                ...envMap,
                 PATH: process.env.PATH || '/usr/local/bin:/usr/bin:/bin',
                 HOME: serverDir,
                 TERM: 'dumb',
                 LANG: process.env.LANG || 'C.UTF-8',
                 LC_ALL: process.env.LC_ALL || 'C.UTF-8',
+                PORT: String(server.primary_port || 25565),
             },
         });
-
-        managed.process = child;
 
         let doneToken = ')! For help, type ';
         try {
