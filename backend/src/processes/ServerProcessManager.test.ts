@@ -22,7 +22,7 @@ test('computeDirectorySizeAsync sums nested files cleanly and handles missing di
 
 test('formatJtgConsoleLine outputs the SOURAJITVFX terminal prefix', () => {
     const line = formatJtgConsoleLine('Server marked as running!');
-    assert.ok(line.startsWith(JTG_TERMINAL_PRELUDE));
+    assert.ok(line.startsWith(SOURAJITVFX_TERMINAL_PRELUDE));
     assert.ok(line.includes('container@SOURAJITVFX~ '));
     assert.ok(line.endsWith('Server marked as running!\u001b[0m'));
 });
