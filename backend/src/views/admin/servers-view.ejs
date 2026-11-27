@@ -23,6 +23,13 @@
                         <label>Startup Command</label>
                         <input type="text" name="startup" class="form-control" value="<%= server.startup %>">
                     </div>
+                    <% if (['nodejs', 'node.js', 'python'].includes(String(server.software_type || '').toLowerCase())) { %>
+                    <input type="hidden" name="image" value="<%= server.image || 'java:auto' %>">
+                    <div class="callout callout-info">
+                        <h4><i class="fa fa-info-circle"></i> Application Runtime</h4>
+                        <p>This is a host-process application egg, not a Docker container. Node.js apps use the panel's own Node.js executable; Python apps require Python 3 on the host. The Java runtime selector does not apply to this server.</p>
+                    </div>
+                    <% } else { %>
                     <div class="form-group">
                         <label>Java Runtime Image</label>
                         <select name="image" class="form-control">
@@ -35,6 +42,7 @@
                             <option value="java:8" <%= server.image === 'java:8' ? 'selected' : '' %>>Java 8</option>
                         </select>
                     </div>
+                    <% } %>
                 </div>
                 <div class="box-footer">
                     <a href="/server/<%= server.uuidShort %>" class="btn btn-default btn-sm"><i class="fa fa-terminal"></i> Open Console</a>
