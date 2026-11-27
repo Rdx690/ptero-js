@@ -484,7 +484,7 @@ router.post('/servers/new', async (req: Request, res: Response) => {
 
 router.get('/servers/view/:id', async (req: Request, res: Response) => {
     const server = await db.queryOne<any>(
-        `SELECT s.*, e.name AS egg_name, a.ip, a.port
+        `SELECT s.*, e.name AS egg_name, e.software_type, a.ip, a.port
          FROM servers s
          JOIN eggs e ON e.id = s.egg_id
          LEFT JOIN allocations a ON a.id = s.allocation_id
