@@ -1,33 +1,26 @@
-<%- include('partials/header', { title: 'Nests', activeNav: 'nests', contentHeader: '<h1>Nests<small>All Minecraft server software definitions available on this system.</small></h1><ol class="breadcrumb"><li><a href="/admin">Admin</a></li><li class="active">Nests</li></ol>' }) %>
-
+<%- include('partials/header', { title: 'Nests & Eggs', activeNav: 'nests', contentHeader: '<h1>Nests & Eggs<small>Configured server software and application runtime templates.</small></h1><ol class="breadcrumb"><li><a href="/admin">Admin</a></li><li class="active">Nests</li></ol>' }) %>
 <div class="row">
-    <div class="col-xs-12">
-        <div class="box box-primary">
-            <div class="box-header with-border"><h3 class="box-title">Configured Nests & Eggs</h3></div>
-            <div class="box-body table-responsive no-padding">
-                <table class="table table-hover">
-                    <tbody>
-                        <tr>
-                            <th>ID</th>
-                            <th>Nest</th>
-                            <th>Egg Name</th>
-                            <th>Software Type</th>
-                            <th>Description</th>
-                        </tr>
-                        <% for (const e of eggs) { %>
-                        <tr>
-                            <td><code><%= e.id %></code></td>
-                            <td><%= e.nest_name %></td>
-                            <td><strong><%= e.name %></strong></td>
-                            <td><code><%= e.software_type %></code></td>
-                            <td><%= e.description %></td>
-                        </tr>
-                        <% } %>
-                    </tbody>
-                </table>
-            </div>
-        </div>
+  <div class="col-xs-12">
+    <div class="box box-primary">
+      <div class="box-header with-border"><h3 class="box-title">Configured Nests & Eggs</h3></div>
+      <div class="box-body table-responsive no-padding">
+        <table class="table table-hover">
+          <thead><tr><th>ID</th><th>Nest</th><th>Egg Name</th><th>Software Type</th><th>Description</th><th>Action</th></tr></thead>
+          <tbody>
+          <% for (const e of eggs) { %>
+            <tr>
+              <td><code><%= e.id %></code></td>
+              <td><%= e.nest_name %></td>
+              <td><strong><%= e.name %></strong></td>
+              <td><code><%= e.software_type %></code></td>
+              <td><%= e.description %></td>
+              <td><a class="btn btn-xs btn-primary" href="/admin/eggs/<%= e.id %>">View details</a></td>
+            </tr>
+          <% } %>
+          </tbody>
+        </table>
+      </div>
     </div>
+  </div>
 </div>
-
 <%- include('partials/footer') %>
