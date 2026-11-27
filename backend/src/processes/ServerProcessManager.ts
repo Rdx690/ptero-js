@@ -471,7 +471,9 @@ class ServerProcessManager {
             launchCommand = '/bin/bash';
             launchArgs = ['-lc', command];
             launchLabel = isPythonApp ? 'Python application' : 'Node.js application';
-            const executable = isPythonApp ? 'python3' : 'node';
+            // Use the exact Node.js executable running this panel. Railway may not
+            // expose a separate "node" shim on PATH to child server processes.
+            const executable = isPythonApp ? 'python3' : process.execPath;
             const check = spawn(executable, ['--version'], { cwd: serverDir, stdio: 'ignore' });
             const available = await new Promise<boolean>((resolve) => {
                 check.once('error', () => resolve(false));
@@ -535,7 +537,7 @@ class ServerProcessManager {
             env: {
                 ...process.env,
                 ...envMap,
-                PATH: process.env.PATH || '/usr/local/bin:/usr/bin:/bin',
+                PATH: [path.dirname(process.execPath), process.env.PATH || '/usr/local/bin:/usr/bin:/bin'].join(path.delimiter),
                 HOME: serverDir,
                 TERM: 'dumb',
                 LANG: process.env.LANG || 'C.UTF-8',
