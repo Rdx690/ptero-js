@@ -34,18 +34,6 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="form-group col-md-4">
-                            <label class="control-label">Default Java Runtime</label>
-                            <div>
-                                <select name="java:default_path" class="form-control">
-                                    <option value="">Auto-Select Compatible Runtime</option>
-                                    <% for (const rt of javaRuntimes) { %>
-                                    <option value="<%= rt.path %>" <%= settings['settings:java:default_path'] === rt.path ? 'selected' : '' %>>Java <%= rt.majorVersion %> (<%= rt.rawVersion %>) - <%= rt.path %></option>
-                                    <% } %>
-                                </select>
-                                <p class="text-muted"><small>Default Java executable for Minecraft servers when set to auto-detect.</small></p>
-                            </div>
-                        </div>
                     </div>
                 </div>
                 <div class="box-footer">
