@@ -1,0 +1,28 @@
+<%- include('partials/header', { title: egg.name, activeNav: 'nests', contentHeader: '<h1>Egg Details<small>Application runtime template configuration</small></h1><ol class="breadcrumb"><li><a href="/admin">Admin</a></li><li><a href="/admin/nests">Nests</a></li><li class="active">Egg</li></ol>' }) %>
+<div class="row">
+  <div class="col-md-12">
+    <div class="box box-primary">
+      <div class="box-header with-border"><h3 class="box-title"><%= egg.name %> <small>#<%= egg.id %></small></h3></div>
+      <div class="box-body">
+        <dl class="dl-horizontal">
+          <dt>Nest</dt><dd><%= egg.nest_name %></dd>
+          <dt>Software type</dt><dd><code><%= egg.software_type %></code></dd>
+          <dt>Description</dt><dd><%= egg.description || '—' %></dd>
+          <dt>Startup command</dt><dd><pre style="white-space:pre-wrap;word-break:break-word"><%= egg.startup || '—' %></pre></dd>
+        </dl>
+        <h4>Docker images</h4>
+        <% if (dockerImages.length) { %>
+          <ul><% for (const item of dockerImages) { %><li><strong><%= item.label %></strong>: <code><%= item.image %></code></li><% } %></ul>
+        <% } else { %><p class="text-muted">No Docker image mappings are configured for this egg.</p><% } %>
+        <h4>Variables</h4>
+        <% if (variables.length) { %>
+        <div class="table-responsive"><table class="table table-striped"><thead><tr><th>Name</th><th>Environment key</th><th>Default</th><th>User editable</th></tr></thead><tbody>
+        <% for (const v of variables) { %><tr><td><%= v.name %></td><td><code><%= v.env_variable %></code></td><td><code><%= v.default_value || '' %></code></td><td><%= v.user_editable ? 'Yes' : 'No' %></td></tr><% } %>
+        </tbody></table></div>
+        <% } else { %><p class="text-muted">No variables configured.</p><% } %>
+      </div>
+      <div class="box-footer"><a class="btn btn-default" href="/admin/nests"><i class="fa fa-arrow-left"></i> Back to Nests</a></div>
+    </div>
+  </div>
+</div>
+<%- include('partials/footer') %>
