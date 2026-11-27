@@ -461,7 +461,7 @@ class ServerProcessManager {
 
         if (isPythonApp || isNodeApp) {
             // Execute app eggs on the host runtime. Railway does not provide Docker egg containers.
-            const command = renderStartupCommand(server.startup || '', {
+            let command = renderStartupCommand(server.startup || '', {
                 ...envMap,
                 SERVER_MEMORY: server.memory,
                 SERVER_IP: server.primary_ip || '0.0.0.0',
@@ -495,6 +495,12 @@ class ServerProcessManager {
                     : 'Node.js runtime is not available on the panel host.';
                 this.appendLog(server.uuid, managed, message, 'daemon error');
                 throw new Error(message);
+            }
+            // Eggs commonly use the generic "python" command. Railway images may
+            // expose only python3, so rewrite that executable token to the runtime
+            // that passed the availability check.
+            if (isPythonApp && executable !== 'python') {
+                command = command.replace(/(^|[\\s;&|()])python(?=\\s|$)/g, `$1${executable}`);
             }
         } else {
             let mcVersion = envMap.MINECRAFT_VERSION || 'latest';
