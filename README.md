@@ -75,6 +75,14 @@ npm run dev
 
 ---
 
+## Docker + Wings Hosting (Important)
+
+This repository currently runs its custom Node.js/Python server processes on the panel host. Its egg JSON files do not, by themselves, create isolated Docker containers, and this custom Express panel is not yet a complete API-compatible control plane for official Pterodactyl Wings.
+
+Do not connect an official Wings daemon to this panel or advertise Node.js/Python servers as Docker-isolated until the full Panel API compatibility layer has been implemented and tested. A Railway service's `localhost` is only that Railway container; it cannot refer to a user's PC or a separate VPS.
+
+For the verified architecture boundary, safe migration sequence, localhost networking rules, and production safeguards, see [Docker + Wings Migration](docs/DOCKER-WINGS-MIGRATION.md).
+
 ## Railway Deployment
 
 See [RAILWAY.md](RAILWAY.md) for direct Railway deployment, persistent-volume configuration, health checks, and the secure first-admin terminal command. This is a Node.js project, so admin creation uses `npm run admin:create` rather than PHP Artisan.
