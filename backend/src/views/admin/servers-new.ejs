@@ -1,4 +1,4 @@
-<%- include('partials/header', { title: 'New Server', activeNav: 'servers', contentHeader: '<h1>Create Server<small>Add a new Minecraft server to the panel.</small></h1><ol class="breadcrumb"><li><a href="/admin">Admin</a></li><li><a href="/admin/servers">Servers</a></li><li class="active">Create Server</li></ol>' }) %>
+<%- include('partials/header', { title: 'New Server', activeNav: 'servers', contentHeader: '<h1>Create Server<small>Deploy a Python or Node.js application.</small></h1><ol class="breadcrumb"><li><a href="/admin">Admin</a></li><li><a href="/admin/servers">Servers</a></li><li class="active">Create Server</li></ol>' }) %>
 
 <form action="/admin/servers/new" method="POST">
     <div class="row">
@@ -101,7 +101,7 @@
     <div class="row">
         <div class="col-md-6">
             <div class="box">
-                <div class="box-header with-border"><h3 class="box-title">Minecraft Software Configuration</h3></div>
+                <div class="box-header with-border"><h3 class="box-title">Runtime & Egg Configuration</h3></div>
                 <div class="box-body">
                     <div class="form-group">
                         <label for="pNestId">Nest</label>
@@ -119,11 +119,11 @@
                             <% } %>
                         </select>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group minecraft-only">
                         <label for="pMinecraftVersion">Minecraft Version</label>
                         <input type="text" id="pMinecraftVersion" name="minecraft_version" class="form-control" value="latest" placeholder="e.g. 1.21.4 or latest">
                     </div>
-                    <div class="form-group">
+                    <div class="form-group minecraft-only">
                         <label for="pJavaImage">Java Runtime Version</label>
                         <select id="pJavaImage" name="image" class="form-control">
                             <option value="java:auto">Auto-Detect for Minecraft Version</option>
@@ -146,12 +146,12 @@
                         <label for="pStartup">Startup Command</label>
                         <input type="text" id="pStartup" name="startup" class="form-control" value="<%= eggs[0] ? eggs[0].startup : '' %>" required>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group minecraft-only">
                         <div class="checkbox checkbox-primary">
                             <input id="pSkipScripts" name="skip_scripts" type="checkbox" value="1" />
                             <label for="pSkipScripts">Skip Software Auto-Download</label>
                         </div>
-                        <p class="text-muted small">If unchecked, the panel automatically downloads the selected Minecraft server JAR and generates EULA + server.properties.</p>
+                        <p class="text-muted small">Minecraft-only installer option. Python and Node.js eggs do not use this setting.</p>
                     </div>
                 </div>
                 <div class="box-footer">
@@ -166,6 +166,17 @@
 document.addEventListener('DOMContentLoaded', function() {
     var eggSelect = document.getElementById('pEggId');
     var startupInput = document.getElementById('pStartup');
+    var nestSelect = document.getElementById('pNestId');
+    var minecraftFields = document.querySelectorAll('.minecraft-only');
+    function updateRuntimeFields() {
+        var eggText = eggSelect && eggSelect.options[eggSelect.selectedIndex] ? eggSelect.options[eggSelect.selectedIndex].text.toLowerCase() : '';
+        var nestText = nestSelect && nestSelect.options[nestSelect.selectedIndex] ? nestSelect.options[nestSelect.selectedIndex].text.toLowerCase() : '';
+        var isAppRuntime = /python|node(?:\.js)?/.test(eggText + ' ' + nestText);
+        minecraftFields.forEach(function(field) { field.style.display = isAppRuntime ? 'none' : ''; });
+    }
+    if (nestSelect) nestSelect.addEventListener('change', updateRuntimeFields);
+    if (eggSelect) eggSelect.addEventListener('change', updateRuntimeFields);
+    updateRuntimeFields();
     if (eggSelect && startupInput) {
         eggSelect.addEventListener('change', function() {
             var opt = eggSelect.options[eggSelect.selectedIndex];
