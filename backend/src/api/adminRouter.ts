@@ -44,8 +44,6 @@ router.get('/', async (req: Request, res: Response) => {
     const serversCnt = await db.queryOne<{ cnt: number }>('SELECT COUNT(*) AS cnt FROM servers');
     const usersCnt = await db.queryOne<{ cnt: number }>('SELECT COUNT(*) AS cnt FROM users');
     const allocCnt = await db.queryOne<{ cnt: number }>('SELECT COUNT(*) AS cnt FROM allocations');
-    const javaRuntimes = await discoverJavaRuntimes();
-
     await renderAdmin(req, res, 'index', {
         nodeVersion: process.version,
         dbDriver: db.getDriver(),
@@ -54,7 +52,6 @@ router.get('/', async (req: Request, res: Response) => {
             users: usersCnt?.cnt || 0,
             allocations: allocCnt?.cnt || 0,
         },
-        javaRuntimes,
     });
 });
 
