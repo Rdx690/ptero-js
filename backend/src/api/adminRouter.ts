@@ -570,4 +570,32 @@ router.get('/nests', async (req: Request, res: Response) => {
     await renderAdmin(req, res, 'nests', { eggs });
 });
 
+
+
+// Egg details (read-only configuration view)
+router.get('/eggs/:id', async (req: Request, res: Response) => {
+    const egg = await db.queryOne<any>(
+        `SELECT e.*, n.name AS nest_name FROM eggs e
+         JOIN nests n ON n.id = e.nest_id WHERE e.id = ?`,
+        [Number(req.params.id)]
+    );
+    if (!egg) {
+        setFlash(res, 'error', 'Egg not found.');
+        res.redirect('/admin/nests');
+        return;
+    }
+    let dockerImages: Array<{ label: string; image: string }> = [];
+    try {
+        const parsed = JSON.parse(egg.docker_images || '{}') as Record<string, string>;
+        dockerImages = Object.entries(parsed).map(([label, image]) => ({ label, image: String(image) }));
+    } catch {
+        dockerImages = [];
+    }
+    const variables = await db.query<any>(
+        'SELECT name, env_variable, default_value, user_editable FROM egg_variables WHERE egg_id = ? ORDER BY id ASC',
+        [egg.id]
+    );
+    await renderAdmin(req, res, 'egg-view', { egg, dockerImages, variables });
+});
+
 export default router;
