@@ -1,129 +1,44 @@
 {
-    "_comment": "DO NOT EDIT: FILE GENERATED AUTOMATICALLY BY PTERODACTYL PANEL - PTERODACTYL.IO",
-    "meta": {
-        "version": "PTDL_v2",
-        "update_url": null
-    },
-    "exported_at": "2025-05-03T00:23:00+00:00",
-    "name": "SOURAJITVFX Python Generic",
-    "author": "Sourajitvfx",
-    "description": "A Generic Python Egg for Pterodactyl\r\n\r\nTested with: https://github.com/Ispira/pixel-bot",
-    "features": null,
-    "docker_images": {
-        "Python 3.13": "ghcr.io/ptero-eggs/yolks:python_3.13",
-        "Python 3.12": "ghcr.io/ptero-eggs/yolks:python_3.12",
-        "Python 3.11": "ghcr.io/ptero-eggs/yolks:python_3.11",
-        "Python 3.10": "ghcr.io/ptero-eggs/yolks:python_3.10",
-        "Python 3.9": "ghcr.io/ptero-eggs/yolks:python_3.9",
-        "Python 3.8": "ghcr.io/ptero-eggs/yolks:python_3.8",
-        "Python 3.7": "ghcr.io/ptero-eggs/yolks:python_3.7",
-        "Python 2.7": "ghcr.io/ptero-eggs/yolks:python_2.7"
-    },
-    "file_denylist": [],
-    "startup": "if [[ -d .git ]] && [[ \"{{AUTO_UPDATE}}\" == \"1\" ]]; then git pull; fi; if [[ ! -z \"{{PY_PACKAGES}}\" ]]; then pip install -U --prefix .local {{PY_PACKAGES}}; fi; if [[ -f /home/container/${REQUIREMENTS_FILE} ]]; then pip install -U --prefix .local -r ${REQUIREMENTS_FILE}; fi; /usr/local/bin/python /home/container/{{PY_FILE}}",
-    "config": {
-        "files": "{}",
-        "startup": "{\r\n    \"done\": \"change this part\"\r\n}",
-        "logs": "{}",
-        "stop": "^C"
-    },
-    "scripts": {
-        "installation": {
-            "script": "#!/bin/bash\r\n# Python App Installation Script\r\n#\r\n# Server Files: /mnt/server\r\napt update\r\napt install -y git curl jq file unzip make gcc g++ libtool\r\n\r\nmkdir -p /mnt/server\r\ncd /mnt/server\r\n\r\nif [ \"${USER_UPLOAD}\" == \"true\" ] || [ \"${USER_UPLOAD}\" == \"1\" ]; then\r\n    echo -e \"assuming user knows what they are doing have a good day.\"\r\n    exit 0\r\nfi\r\n\r\n## add git ending if it's not on the address\r\nif [[ ${GIT_ADDRESS} != *.git ]]; then\r\n    GIT_ADDRESS=${GIT_ADDRESS}.git\r\nfi\r\n\r\nif [ -z \"${USERNAME}\" ] && [ -z \"${ACCESS_TOKEN}\" ]; then\r\n    echo -e \"using anon api call\"\r\nelse\r\n    GIT_ADDRESS=\"https://${USERNAME}:${ACCESS_TOKEN}@$(echo -e ${GIT_ADDRESS} | cut -d/ -f3-)\"\r\nfi\r\n\r\n## pull git python repo\r\nif [ \"$(ls -A /mnt/server)\" ]; then\r\n    echo -e \"/mnt/server directory is not empty.\"\r\n    if [ -d .git ]; then\r\n        echo -e \".git directory exists\"\r\n        if [ -f .git/config ]; then\r\n            echo -e \"loading info from git config\"\r\n            ORIGIN=$(git config --get remote.origin.url)\r\n        else\r\n            echo -e \"files found with no git config\"\r\n            echo -e \"closing out without touching things to not break anything\"\r\n            exit 10\r\n        fi\r\n    fi\r\n\r\n    if [ \"${ORIGIN}\" == \"${GIT_ADDRESS}\" ]; then\r\n        echo \"pulling latest from github\"\r\n        git pull\r\n    fi\r\nelse\r\n    echo -e \"/mnt/server is empty.\\ncloning files into repo\"\r\n    if [ -z ${BRANCH} ]; then\r\n        echo -e \"cloning default branch\"\r\n        git clone ${GIT_ADDRESS} .\r\n    else\r\n        echo -e \"cloning ${BRANCH}'\"\r\n        git clone --single-branch --branch ${BRANCH} ${GIT_ADDRESS} .\r\n    fi\r\n\r\nfi\r\n\r\nexport HOME=/mnt/server\r\n\r\necho \"Installing python requirements into folder\"\r\nif [[ ! -z ${PY_PACKAGES} ]]; then\r\n    pip install -U --prefix .local ${PY_PACKAGES}\r\nfi\r\n\r\nif [ -f /mnt/server/requirements.txt ]; then\r\n    pip install -U --prefix .local -r ${REQUIREMENTS_FILE}\r\nfi\r\n\r\necho -e \"install complete\"\r\nexit 0",
-            "container": "python:3.8-slim-bookworm",
-            "entrypoint": "bash"
-        }
-    },
-    "variables": [
-        {
-            "name": "Git Repo Address",
-            "description": "Git repo to clone\r\n\r\nI.E. https://github.com/parkervcp/repo_name",
-            "env_variable": "GIT_ADDRESS",
-            "default_value": "",
-            "user_viewable": true,
-            "user_editable": true,
-            "rules": "nullable|string",
-            "field_type": "text"
-        },
-        {
-            "name": "Git Branch",
-            "description": "What branch to pull from github.\r\n\r\nDefault is blank to pull the repo default branch",
-            "env_variable": "BRANCH",
-            "default_value": "",
-            "user_viewable": true,
-            "user_editable": true,
-            "rules": "nullable|string",
-            "field_type": "text"
-        },
-        {
-            "name": "User Uploaded Files",
-            "description": "Skip all the install stuff if you are letting a user upload files.\r\n\r\n0 = false (default)\r\n1 = true",
-            "env_variable": "USER_UPLOAD",
-            "default_value": "0",
-            "user_viewable": true,
-            "user_editable": true,
-            "rules": "required|boolean",
-            "field_type": "text"
-        },
-        {
-            "name": "Auto Update",
-            "description": "Pull the latest files on startup when using a GitHub repo.",
-            "env_variable": "AUTO_UPDATE",
-            "default_value": "0",
-            "user_viewable": true,
-            "user_editable": true,
-            "rules": "required|boolean",
-            "field_type": "text"
-        },
-        {
-            "name": "App py file",
-            "description": "The file that starts the App.",
-            "env_variable": "PY_FILE",
-            "default_value": "app.py",
-            "user_viewable": true,
-            "user_editable": true,
-            "rules": "required|string",
-            "field_type": "text"
-        },
-        {
-            "name": "Additional Python packages",
-            "description": "Install additional python packages.\r\n\r\nUse spaces to separate",
-            "env_variable": "PY_PACKAGES",
-            "default_value": "",
-            "user_viewable": true,
-            "user_editable": true,
-            "rules": "nullable|string",
-            "field_type": "text"
-        },
-        {
-            "name": "Git Username",
-            "description": "Username to auth with git.",
-            "env_variable": "USERNAME",
-            "default_value": "",
-            "user_viewable": true,
-            "user_editable": true,
-            "rules": "nullable|string",
-            "field_type": "text"
-        },
-        {
-            "name": "Git Access Token",
-            "description": "Password to use with git.\r\n\r\nIt's best practice to use a Personal Access Token.\r\nhttps://github.com/settings/tokens\r\nhttps://gitlab.com/-/profile/personal_access_tokens",
-            "env_variable": "ACCESS_TOKEN",
-            "default_value": "",
-            "user_viewable": true,
-            "user_editable": true,
-            "rules": "nullable|string",
-            "field_type": "text"
-        },
-        {
-            "name": "Requirements file",
-            "description": "if there are other requirements files to choose from.",
-            "env_variable": "REQUIREMENTS_FILE",
-            "default_value": "requirements.txt",
-            "user_viewable": true,
-            "user_editable": true,
-            "rules": "required|string",
-            "field_type": "text"
-        }
-    ]
+  "_comment": "SOURAJITVFX maintained Python application egg",
+  "meta": {"version": "PTDL_v2", "update_url": null},
+  "exported_at": "2026-11-27T00:00:00+00:00",
+  "name": "Python Application",
+  "author": "SOURAJITVFX",
+  "description": "Python application egg with selectable Python runtime images, requirements.txt support, optional pip packages, uploaded files or Git deployment.",
+  "features": null,
+  "docker_images": {
+    "Python 3.13": "ghcr.io/ptero-eggs/yolks:python_3.13",
+    "Python 3.12": "ghcr.io/ptero-eggs/yolks:python_3.12",
+    "Python 3.11": "ghcr.io/ptero-eggs/yolks:python_3.11",
+    "Python 3.10": "ghcr.io/ptero-eggs/yolks:python_3.10",
+    "Python 3.9": "ghcr.io/ptero-eggs/yolks:python_3.9",
+    "Python 3.8": "ghcr.io/ptero-eggs/yolks:python_3.8"
+  },
+  "file_denylist": [],
+  "startup": "cd /home/container\nset -e\nif [ -d .git ] && [ \"{{AUTO_UPDATE}}\" = \"1\" ]; then git pull --ff-only; fi\nif [ ! -f \"{{PY_FILE}}\" ]; then echo \"ERROR: Main Python file '{{PY_FILE}}' was not found.\"; exit 1; fi\nif [ ! -d .venv ]; then python -m venv .venv; fi\n.venv/bin/python -m pip install --upgrade pip\nif [ -n \"{{PY_PACKAGES}}\" ]; then .venv/bin/python -m pip install {{PY_PACKAGES}}; fi\nif [ -n \"{{REQUIREMENTS_FILE}}\" ] && [ -f \"{{REQUIREMENTS_FILE}}\" ]; then .venv/bin/python -m pip install -r \"{{REQUIREMENTS_FILE}}\"; elif [ -f requirements.txt ]; then .venv/bin/python -m pip install -r requirements.txt; fi\nexec .venv/bin/python \"{{PY_FILE}}\" {{PY_ARGS}}",
+  "config": {
+    "files": "{}",
+    "startup": "{\"done\":[\"Application started\",\"Bot is running\",\"Listening on\"]}",
+    "logs": "{}",
+    "stop": "^C"
+  },
+  "scripts": {
+    "installation": {
+      "script": "#!/bin/bash\nset -euo pipefail\napt-get update\napt-get install -y --no-install-recommends git curl jq file unzip make gcc g++ libtool\nrm -rf /var/lib/apt/lists/*\nmkdir -p /mnt/server\ncd /mnt/server\nif [[ \"${USER_UPLOAD:-0}\" == \"1\" || \"${USER_UPLOAD:-0}\" == \"true\" ]]; then echo \"Upload mode: skipping Git clone.\"; exit 0; fi\nif [[ -z \"${GIT_ADDRESS:-}\" ]]; then echo \"No Git repository set; use uploaded files.\"; exit 0; fi\nREPO=\"${GIT_ADDRESS}\"\nif [[ \"${REPO}\" != *.git ]]; then REPO=\"${REPO}.git\"; fi\nif [[ -n \"${USERNAME:-}\" && -n \"${ACCESS_TOKEN:-}\" ]]; then HOST_PATH=\"${REPO#https://}\"; HOST_PATH=\"${HOST_PATH#http://}\"; REPO=\"https://${USERNAME}:${ACCESS_TOKEN}@${HOST_PATH}\"; fi\nif [[ -d .git ]]; then git remote set-url origin \"${REPO}\"; git fetch --all --prune; if [[ -n \"${BRANCH:-}\" ]]; then git checkout \"${BRANCH}\"; fi; git pull --ff-only; elif [[ -n \"$(ls -A . 2>/dev/null)\" ]]; then echo \"ERROR: Directory is not empty and not a Git repository; refusing overwrite.\"; exit 10; else if [[ -n \"${BRANCH:-}\" ]]; then git clone --single-branch --branch \"${BRANCH}\" \"${REPO}\" .; else git clone \"${REPO}\" .; fi; fi\necho \"Python application files prepared.\"",
+      "container": "python:3.12-slim-bookworm",
+      "entrypoint": "bash"
+    }
+  },
+  "variables": [
+    {"name":"Git Repository URL","description":"Optional Git repository URL. Leave blank for uploaded files.","env_variable":"GIT_ADDRESS","default_value":"","user_viewable":true,"user_editable":true,"rules":"nullable|string","field_type":"text"},
+    {"name":"Git Branch","description":"Optional branch; blank uses repository default.","env_variable":"BRANCH","default_value":"","user_viewable":true,"user_editable":true,"rules":"nullable|string","field_type":"text"},
+    {"name":"User Uploaded Files","description":"Set to 1 to skip Git cloning and use panel-uploaded files.","env_variable":"USER_UPLOAD","default_value":"1","user_viewable":true,"user_editable":true,"rules":"required|boolean","field_type":"text"},
+    {"name":"Auto Update","description":"Pull Git changes on startup when using a Git clone.","env_variable":"AUTO_UPDATE","default_value":"0","user_viewable":true,"user_editable":true,"rules":"required|boolean","field_type":"text"},
+    {"name":"Main Python File","description":"Entrypoint such as app.py or main.py.","env_variable":"PY_FILE","default_value":"app.py","user_viewable":true,"user_editable":true,"rules":"required|string|max:128","field_type":"text"},
+    {"name":"Additional Python Packages","description":"Optional pip packages separated by spaces.","env_variable":"PY_PACKAGES","default_value":"","user_viewable":true,"user_editable":true,"rules":"nullable|string","field_type":"text"},
+    {"name":"Requirements File","description":"Requirements path, normally requirements.txt.","env_variable":"REQUIREMENTS_FILE","default_value":"requirements.txt","user_viewable":true,"user_editable":true,"rules":"nullable|string|max:128","field_type":"text"},
+    {"name":"Python Arguments","description":"Optional arguments passed to the entrypoint.","env_variable":"PY_ARGS","default_value":"","user_viewable":true,"user_editable":true,"rules":"nullable|string|max:256","field_type":"text"},
+    {"name":"Git Username","description":"Optional private Git username.","env_variable":"USERNAME","default_value":"","user_viewable":true,"user_editable":true,"rules":"nullable|string","field_type":"text"},
+    {"name":"Git Access Token","description":"Optional private Git token; keep secret.","env_variable":"ACCESS_TOKEN","default_value":"","user_viewable":true,"user_editable":true,"rules":"nullable|string","field_type":"text"}
+  ]
 }
