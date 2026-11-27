@@ -473,14 +473,26 @@ class ServerProcessManager {
             launchLabel = isPythonApp ? 'Python application' : 'Node.js application';
             // Use the exact Node.js executable running this panel. Railway may not
             // expose a separate "node" shim on PATH to child server processes.
-            const executable = isPythonApp ? 'python3' : process.execPath;
-            const check = spawn(executable, ['--version'], { cwd: serverDir, stdio: 'ignore' });
-            const available = await new Promise<boolean>((resolve) => {
-                check.once('error', () => resolve(false));
-                check.once('close', (code) => resolve(code === 0));
-            });
-            if (!available) {
-                const message = `${executable} runtime is not installed on the panel host. Docker egg images are not available in this Railway deployment.`;
+            // Emergency host-runtime mode: probe common Python executable names.
+            // Node uses the exact executable running this panel so it works even when
+            // the PATH does not contain a separate "node" shim.
+            const candidates = isPythonApp ? ['python3', 'python3.13', 'python3.12', 'python'] : [process.execPath];
+            let executable: string | null = null;
+            for (const candidate of candidates) {
+                const check = spawn(candidate, ['--version'], { cwd: serverDir, stdio: 'ignore' });
+                const available = await new Promise<boolean>((resolve) => {
+                    check.once('error', () => resolve(false));
+                    check.once('close', (code) => resolve(code === 0));
+                });
+                if (available) {
+                    executable = candidate;
+                    break;
+                }
+            }
+            if (!executable) {
+                const message = isPythonApp
+                    ? `Python runtime not found. Tried: ${candidates.join(', ')}. Add Python 3.12 to the Railway build environment and redeploy.`
+                    : 'Node.js runtime is not available on the panel host.';
                 this.appendLog(server.uuid, managed, message, 'daemon error');
                 throw new Error(message);
             }
