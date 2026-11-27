@@ -500,7 +500,7 @@ class ServerProcessManager {
             // expose only python3, so rewrite that executable token to the runtime
             // that passed the availability check.
             if (isPythonApp && executable !== 'python') {
-                command = command.replace(/(^|[\\s;&|()])python(?=\\s|$)/g, `$1${executable}`);
+                command = command.replace(/(^|[\s;&|()])python(?=\s|$)/g, `$1${executable}`);
             }
         } else {
             let mcVersion = envMap.MINECRAFT_VERSION || 'latest';
