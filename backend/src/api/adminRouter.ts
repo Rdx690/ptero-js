@@ -70,15 +70,13 @@ router.get('/settings', async (req: Request, res: Response) => {
     const rows = await db.query<{ key: string; value: string }>('SELECT `key`, value FROM settings');
     const settings: Record<string, string> = {};
     for (const r of rows) settings[r.key] = r.value;
-    const javaRuntimes = await discoverJavaRuntimes();
-    await renderAdmin(req, res, 'settings', { settings, javaRuntimes });
+    await renderAdmin(req, res, 'settings', { settings });
 });
 
 router.post('/settings', async (req: Request, res: Response) => {
     const updates: Record<string, string> = {
         'settings:app:name': String(req.body?.['app:name'] || config.appName).trim(),
         'settings:pterodactyl:auth:2fa_required': String(req.body?.['pterodactyl:auth:2fa_required'] || '0'),
-        'settings:java:default_path': String(req.body?.['java:default_path'] || '').trim(),
     };
     for (const [k, v] of Object.entries(updates)) {
         const exists = await db.queryOne('SELECT id FROM settings WHERE `key` = ?', [k]);
