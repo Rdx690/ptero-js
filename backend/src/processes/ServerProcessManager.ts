@@ -502,6 +502,12 @@ class ServerProcessManager {
             if (isPythonApp && executable !== 'python') {
                 command = command.replace(/(^|[\s;&|()])python(?=\s|$)/g, `$1${executable}`);
             }
+            if (isNodeApp) {
+                // Use the exact Node executable running the panel; the Railway
+                // container may not expose a separate "node" command on PATH.
+                const nodePath = '"' + process.execPath.replace(/(["\\$\x60])/g, '\\$1') + '"';
+                command = command.replace(/(^|[\s;&|()])node(?=\s|$)/g, `$1${nodePath}`);
+            }
         } else {
             let mcVersion = envMap.MINECRAFT_VERSION || 'latest';
             if (mcVersion === 'latest' && fs.existsSync(path.join(serverDir, '.mc-version'))) {
